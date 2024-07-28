@@ -21,6 +21,7 @@
 /* [Includes] */
 #include <jni.h>
 #include <android/log.h>
+#include <unistd.h>
 /* [Includes] */
 
 #define LOG_TAG "libNative"
@@ -31,8 +32,15 @@
 extern "C"
 {
 	JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_graphicssetup_NativeLibrary_init(
-			JNIEnv * env, jclass clazz) {
+			JNIEnv * env, jclass clazz, jint width, jint height) {
         LOGI("Hello From the Native Side!!");
+    }
+
+    JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_graphicssetup_NativeLibrary_step(
+            JNIEnv * env, jclass clazz) {
+        /* Sleeping to avoid thrashing the Android log. */
+        sleep(5);
+        LOGI("New Frame Ready to be Drawn!!!!");
     }
 }
 /* [Function definitions] */

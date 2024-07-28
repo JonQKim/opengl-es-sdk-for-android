@@ -11,12 +11,14 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
     private static final String LOGTAG = "MainActivity";
+    protected TutorialView graphicsView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(LOGTAG, "On Create Method Calling Native Library");
-        NativeLibrary.init();
+        Log.d(LOGTAG, "Creating New Tutorial View");
+        graphicsView = new TutorialView(getApplication());
+//        NativeLibrary.init();
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -24,5 +26,17 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        graphicsView.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        graphicsView.onResume();
     }
 }
