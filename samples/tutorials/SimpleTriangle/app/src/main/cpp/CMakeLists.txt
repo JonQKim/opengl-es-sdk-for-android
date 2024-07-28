@@ -29,10 +29,14 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
     # List C/C++ source files with relative paths to this CMakeLists.txt.
     simpletriangle.cpp)
 
+set(LIB_DEPENDENCIES "")
+list(APPEND LIB_DEPENDENCIES "-lEGL")
+list(APPEND LIB_DEPENDENCIES "-lGLESv3")
+
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
 # build script, prebuilt third-party libraries, or Android system libraries.
 target_link_libraries(${CMAKE_PROJECT_NAME}
     # List libraries link to the target library
-    android
+    android ${LIB_DEPENDENCIES}
     log)
