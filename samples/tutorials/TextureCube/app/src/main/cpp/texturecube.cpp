@@ -25,11 +25,12 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
 
 #include "Matrix.h"
+#include "Texture.h"
 /* [Includes] */
 
 #define LOG_TAG "libNative"
@@ -39,24 +40,25 @@
 /* [vertexShader] */
 static const char  glVertexShader[] =
         "attribute vec4 vertexPosition;\n"
-        "attribute vec3 vertexColour;\n"
-        "varying vec3 fragColour;\n"
+        "attribute vec2 vertexTextureCord;\n"
+        "varying vec2 textureCord;\n"
         "uniform mat4 projection;\n"
         "uniform mat4 modelView;\n"
         "void main()\n"
         "{\n"
         "    gl_Position = projection * modelView * vertexPosition;\n"
-        "    fragColour = vertexColour;\n"
+        "    textureCord = vertexTextureCord;\n"
         "}\n";
 /* [vertexShader] */
 
 /* [fragmentShader] */
 static const char  glFragmentShader[] =
         "precision mediump float;\n"
-        "varying vec3 fragColour;\n"
+        "uniform sampler2D texture;\n"
+        "varying vec2 textureCord;\n"
         "void main()\n"
         "{\n"
-        "    gl_FragColor = vec4(fragColour, 1.0);\n"
+        "    gl_FragColor = texture2D(texture, textureCord);\n"
         "}\n";
 /* [fragmentShader] */
 /* [Function definitions] */
@@ -67,9 +69,11 @@ GLuint loadShader(GLenum shaderType, const char* shaderSource)
     {
         glShaderSource(shader, 1, &shaderSource, NULL);
         glCompileShader(shader);
+
         GLint compiled = 0;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-        if (!compiled)
+
+        if (compiled != GL_TRUE)
         {
             GLint infoLen = 0;
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
@@ -117,11 +121,14 @@ GLuint createProgram(const char* vertexSource, const char * fragmentSource)
         glAttachShader(program, fragmentShader);
         glLinkProgram(program);
         GLint linkStatus = GL_FALSE;
-        glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+        glGetProgramiv(program , GL_LINK_STATUS, &linkStatus);
+
         if(linkStatus != GL_TRUE)
         {
             GLint bufLength = 0;
+
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &bufLength);
+
             if (bufLength > 0)
             {
                 char* logBuffer = (char*) malloc(bufLength);
@@ -141,43 +148,54 @@ GLuint createProgram(const char* vertexSource, const char * fragmentSource)
     return program;
 }
 
-GLuint simpleCubeProgram;
+GLuint glProgram;
 GLuint vertexLocation;
-GLuint vertexColourLocation;
+GLuint samplerLocation;
 GLuint projectionLocation;
 GLuint modelViewLocation;
+GLuint textureCordLocation;
+GLuint textureId;
 
 float projectionMatrix[16];
 float modelViewMatrix[16];
 float angle = 0;
 
-/* [setupGraphics] */
+/* [setupGraphicsUpdate] */
 bool setupGraphics(int width, int height)
 {
-    simpleCubeProgram = createProgram(glVertexShader, glFragmentShader);
+    glProgram = createProgram(glVertexShader, glFragmentShader);
 
-    if (simpleCubeProgram == 0)
+    if (!glProgram)
     {
         LOGE ("Could not create program");
         return false;
     }
 
-    vertexLocation = glGetAttribLocation(simpleCubeProgram, "vertexPosition");
-    vertexColourLocation = glGetAttribLocation(simpleCubeProgram, "vertexColour");
-    projectionLocation = glGetUniformLocation(simpleCubeProgram, "projection");
-    modelViewLocation = glGetUniformLocation(simpleCubeProgram, "modelView");
+    vertexLocation = glGetAttribLocation(glProgram, "vertexPosition");
+    textureCordLocation = glGetAttribLocation(glProgram, "vertexTextureCord");
+    projectionLocation = glGetUniformLocation(glProgram, "projection");
+    modelViewLocation = glGetUniformLocation(glProgram, "modelView");
+    samplerLocation = glGetUniformLocation(glProgram, "texture");
 
-    /* Setup the perspective */
+    /* Setup the perspective. */
     matrixPerspective(projectionMatrix, 45, (float)width / (float)height, 0.1f, 100);
     glEnable(GL_DEPTH_TEST);
 
     glViewport(0, 0, width, height);
 
-    return true;
+    /* Load the Texture. */
+    textureId = loadSimpleTexture();
+    if(textureId == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
-/* [setupGraphics] */
-
-/* [cubeVertices] */
+/* [setupGraphicsUpdate] */
+/* [verticesAndTexture] */
 GLfloat cubeVertices[] = {-1.0f,  1.0f, -1.0f, /* Back. */
                            1.0f,  1.0f, -1.0f,
                           -1.0f, -1.0f, -1.0f,
@@ -203,38 +221,35 @@ GLfloat cubeVertices[] = {-1.0f,  1.0f, -1.0f, /* Back. */
                            1.0f,  1.0f,  1.0f,
                            1.0f,  1.0f, -1.0f
                          };
-/* [cubeVertices] */
-/* [colourComponents] */
-GLfloat colour[] = {1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    1.0f, 1.0f, 0.0f,
-                    1.0f, 1.0f, 0.0f,
-                    1.0f, 1.0f, 0.0f,
-                    1.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 1.0f,
-                    0.0f, 1.0f, 1.0f,
-                    0.0f, 1.0f, 1.0f,
-                    0.0f, 1.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f
-                   };
-/* [colourComponents] */
 
-/* [indices] */
-GLushort indices[] = {0, 2, 3, 0, 1, 3, 4, 6, 7, 4, 5, 7, 8, 9, 10, 11, 8, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
-/* [indices] */
+GLfloat textureCords[] = { 1.0f, 1.0f, /* Back. */
+                           0.0f, 1.0f,
+                           1.0f, 0.0f,
+                           0.0f, 0.0f,
+                           0.0f, 1.0f, /* Front. */
+                           1.0f, 1.0f,
+                           0.0f, 0.0f,
+                           1.0f, 0.0f,
+                           0.0f, 1.0f, /* Left. */
+                           0.0f, 0.0f,
+                           1.0f, 0.0f,
+                           1.0f, 1.0f,
+                           1.0f, 1.0f, /* Right. */
+                           1.0f, 0.0f,
+                           0.0f, 0.0f,
+                           0.0f, 1.0f,
+                           0.0f, 1.0f, /* Top. */
+                           0.0f, 0.0f,
+                           1.0f, 0.0f,
+                           1.0f, 1.0f,
+                           0.0f, 0.0f, /* Bottom. */
+                           0.0f, 1.0f,
+                           1.0f, 1.0f,
+                           1.0f, 0.0f
+};
+/* [verticesAndTexture] */
+
+GLushort indicies[] = {0, 3, 2, 0, 1, 3, 4, 6, 7, 4, 7, 5,  8, 9, 10, 8, 11, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
 
 /* [renderFrame] */
 void renderFrame()
@@ -249,16 +264,20 @@ void renderFrame()
 
     matrixTranslate(modelViewMatrix, 0.0f, 0.0f, -10.0f);
 
-    glUseProgram(simpleCubeProgram);
+    glUseProgram(glProgram);
     glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
     glEnableVertexAttribArray(vertexLocation);
-    glVertexAttribPointer(vertexColourLocation, 3, GL_FLOAT, GL_FALSE, 0, colour);
-    glEnableVertexAttribArray(vertexColourLocation);
 
-    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projectionMatrix);
+    /* [enableAttributes] */
+    glVertexAttribPointer(textureCordLocation, 2, GL_FLOAT, GL_FALSE, 0, textureCords);
+    glEnableVertexAttribArray(textureCordLocation);
+    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE,projectionMatrix);
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelViewMatrix);
 
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, indices);
+    /* Set the sampler texture unit to 0. */
+    glUniform1i(samplerLocation, 0);
+    /* [enableAttributes] */
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, indicies);
 
     angle += 1;
     if (angle > 360)

@@ -14,7 +14,7 @@ project("Native")
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
-# You can define multiple libraries, and CMake builds them for you.
+# You can define multiple libraries, and CMake builds
 # Gradle automatically packages shared libraries with your APK.
 #
 # In this top level CMakeLists.txt, ${CMAKE_PROJECT_NAME} is used to define
@@ -28,7 +28,8 @@ project("Native")
 add_library(${CMAKE_PROJECT_NAME} SHARED
     # List C/C++ source files with relative paths to this CMakeLists.txt.
     texturecube.cpp
-    Matrix.cpp)
+    Matrix.cpp
+    Texture.cpp)
 
 set(LIB_DEPENDENCIES "")
 list(APPEND LIB_DEPENDENCIES "-lEGL")
