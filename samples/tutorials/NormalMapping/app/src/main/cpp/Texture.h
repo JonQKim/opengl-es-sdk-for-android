@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TEXTURECUBE_TEXTURE_H
-#define TEXTURECUBE_TEXTURE_H
+#ifndef NORMALMAPPING_TEXTURE_H
+#define NORMALMAPPING_TEXTURE_H
 
 #include <GLES2/gl2.h>
 
@@ -27,5 +27,5 @@
  * \brief Loads a simple 3 x 3 static texture into OpenGL ES.
  * \return Returns the handle to the texture object.
  */
-GLuint loadSimpleTexture();
-#endif //TEXTURECUBE_TEXTURE_H
+GLuint loadTexture();
+#endif //NORMALMAPPING_TEXTURE_H
