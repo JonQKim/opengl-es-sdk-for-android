@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef SIMPLECUBE_MATRIX_H
-#define SIMPLECUBE_MATRIX_H
+#ifndef MATRIX_H
+#define MATRIX_H
 #include <math.h>
 
 /**
@@ -104,4 +104,4 @@ void matrixScale(float* matrix,float x, float y, float z);
  */
 float matrixDegreesToRadians(float degrees);
 
-#endif //SIMPLECUBE_MATRIX_H
+#endif // MATRIX_H

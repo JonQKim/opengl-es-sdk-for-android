@@ -30,6 +30,10 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
     assetloading.cpp
     Matrix.cpp)
 
+add_library(assimp SHARED IMPORTED)
+set_property(TARGET assimp PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/assimp/libassimp.so)
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/assimp/include)
+
 set(LIB_DEPENDENCIES "")
 list(APPEND LIB_DEPENDENCIES "-lEGL")
 list(APPEND LIB_DEPENDENCIES "-lGLESv3")
@@ -40,4 +44,8 @@ list(APPEND LIB_DEPENDENCIES "-lGLESv3")
 target_link_libraries(${CMAKE_PROJECT_NAME}
     # List libraries link to the target library
     android ${LIB_DEPENDENCIES}
-    log)
+    log
+	assimp)
+
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/assimp/libassimp.so ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})

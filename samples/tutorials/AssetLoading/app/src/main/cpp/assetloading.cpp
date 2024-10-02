@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2017, ARM Limited and Contributors
+/* Copyright (c) 2014-2017, ARM Limited and Contributors
  *
  * SPDX-License-Identifier: MIT
  *
@@ -30,7 +30,18 @@
 #include <math.h>
 
 #include "Matrix.h"
-/* [Includes] */
+
+/* [New includes and global variables.] */
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <vector>
+
+/* The global Assimp scene object. */
+const struct aiScene* scene = NULL;
+
+std::vector<GLfloat> vertices;
+std::vector<GLushort> indices;
+/* [New includes and global variables.] */
 
 #define LOG_TAG "libNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -141,7 +152,7 @@ GLuint createProgram(const char* vertexSource, const char * fragmentSource)
     return program;
 }
 
-GLuint simpleCubeProgram;
+GLuint glProgram;
 GLuint vertexLocation;
 GLuint vertexColourLocation;
 GLuint projectionLocation;
@@ -154,18 +165,18 @@ float angle = 0;
 /* [setupGraphics] */
 bool setupGraphics(int width, int height)
 {
-    simpleCubeProgram = createProgram(glVertexShader, glFragmentShader);
+    glProgram = createProgram(glVertexShader, glFragmentShader);
 
-    if (simpleCubeProgram == 0)
+    if (glProgram == 0)
     {
         LOGE ("Could not create program");
         return false;
     }
 
-    vertexLocation = glGetAttribLocation(simpleCubeProgram, "vertexPosition");
-    vertexColourLocation = glGetAttribLocation(simpleCubeProgram, "vertexColour");
-    projectionLocation = glGetUniformLocation(simpleCubeProgram, "projection");
-    modelViewLocation = glGetUniformLocation(simpleCubeProgram, "modelView");
+    vertexLocation = glGetAttribLocation(glProgram, "vertexPosition");
+    vertexColourLocation = glGetAttribLocation(glProgram, "vertexColour");
+    projectionLocation = glGetUniformLocation(glProgram, "projection");
+    modelViewLocation = glGetUniformLocation(glProgram, "modelView");
 
     /* Setup the perspective */
     matrixPerspective(projectionMatrix, 45, (float)width / (float)height, 0.1f, 100);
@@ -173,70 +184,54 @@ bool setupGraphics(int width, int height)
 
     glViewport(0, 0, width, height);
 
+    /* [Load a model into the Open Asset Importer.] */
+    std::string sphere = "s 0 0 0 10";
+    scene = aiImportFileFromMemory(sphere.c_str(), sphere.length(), 0, ".nff");
+
+    if(!scene)
+    {
+        LOGE("Open Asset Importer could not load scene. \n");
+        return false;
+    }
+    /* [Load a model into the Open Asset Importer.] */
+
+    /* [Accumulate the model vertices and indices.] */
+    int vertices_accumulation = 0;
+    /* Go through each mesh in the scene. */
+    for (int i = 0; i < scene->mNumMeshes; i++)
+    {
+        /* Add all the vertices in the mesh to our array. */
+        for (int j = 0; j < scene->mMeshes[i]->mNumVertices; j++)
+        {
+            const aiVector3D& vector = scene->mMeshes[i]->mVertices[j];
+            vertices.push_back(vector.x);
+            vertices.push_back(vector.y);
+            vertices.push_back(vector.z);
+        }
+
+        /*
+         * Add all the indices in the mesh to our array.
+         * Indices are listed in the Open Asset importer relative to the mesh they are in.
+         * Because we are adding all vertices from all meshes to one array we must add an offset
+         * to the indices to correct for this.
+         */
+        for (unsigned int j = 0 ; j < scene->mMeshes[i]->mNumFaces ; j++)
+        {
+            const aiFace& face = scene->mMeshes[i]->mFaces[j];
+            indices.push_back(face.mIndices[0] + vertices_accumulation);
+            indices.push_back(face.mIndices[1] + vertices_accumulation);
+            indices.push_back(face.mIndices[2] + vertices_accumulation);
+        }
+
+        /* Keep track of number of vertices loaded so far to use as an offset for the indices. */
+        vertices_accumulation += scene->mMeshes[i]->mNumVertices;
+    }
+    /* [Accumulate the model vertices and indices.] */
+
     return true;
 }
 /* [setupGraphics] */
 
-/* [cubeVertices] */
-GLfloat cubeVertices[] = {-1.0f,  1.0f, -1.0f, /* Back. */
-                           1.0f,  1.0f, -1.0f,
-                          -1.0f, -1.0f, -1.0f,
-                           1.0f, -1.0f, -1.0f,
-                          -1.0f,  1.0f,  1.0f, /* Front. */
-                           1.0f,  1.0f,  1.0f,
-                          -1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f,  1.0f,
-                          -1.0f,  1.0f, -1.0f, /* Left. */
-                          -1.0f, -1.0f, -1.0f,
-                          -1.0f, -1.0f,  1.0f,
-                          -1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f, -1.0f, /* Right. */
-                           1.0f, -1.0f, -1.0f,
-                           1.0f, -1.0f,  1.0f,
-                           1.0f,  1.0f,  1.0f,
-                          -1.0f, -1.0f, -1.0f, /* Top. */
-                          -1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f, -1.0f,
-                          -1.0f,  1.0f, -1.0f, /* Bottom. */
-                          -1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f, -1.0f
-                         };
-/* [cubeVertices] */
-/* [colourComponents] */
-GLfloat colour[] = {1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    1.0f, 1.0f, 0.0f,
-                    1.0f, 1.0f, 0.0f,
-                    1.0f, 1.0f, 0.0f,
-                    1.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 1.0f,
-                    0.0f, 1.0f, 1.0f,
-                    0.0f, 1.0f, 1.0f,
-                    0.0f, 1.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f,
-                    1.0f, 0.0f, 1.0f
-                   };
-/* [colourComponents] */
-
-/* [indices] */
-GLushort indices[] = {0, 2, 3, 0, 1, 3, 4, 6, 7, 4, 5, 7, 8, 9, 10, 11, 8, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
-/* [indices] */
-
-/* [renderFrame] */
 void renderFrame()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -249,16 +244,21 @@ void renderFrame()
 
     matrixTranslate(modelViewMatrix, 0.0f, 0.0f, -10.0f);
 
-    glUseProgram(simpleCubeProgram);
-    glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
+    /* [Pass the the model vertices and indices to OpenGL ES.] */
+    glUseProgram(glProgram);
+    /* Use the vertex data loaded from the Open Asset Importer. */
+    glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, &vertices[0]);
     glEnableVertexAttribArray(vertexLocation);
-    glVertexAttribPointer(vertexColourLocation, 3, GL_FLOAT, GL_FALSE, 0, colour);
+    /* We're using vertices as the colour data here for simplicity. */
+    glVertexAttribPointer(vertexColourLocation, 3, GL_FLOAT, GL_FALSE, 0, &vertices[0]);
     glEnableVertexAttribArray(vertexColourLocation);
 
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projectionMatrix);
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelViewMatrix);
 
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, indices);
+    /* Use the index data loaded from the Open Asset Importer. */
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, &indices[0]);
+    /* [Pass the the model vertices and indices to OpenGL ES.] */
 
     angle += 1;
     if (angle > 360)
