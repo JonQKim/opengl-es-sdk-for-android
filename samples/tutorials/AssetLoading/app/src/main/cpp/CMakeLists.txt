@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 # Declares the project name. The project name can be accessed via ${ PROJECT_NAME},
 # Since this is the top level CMakeLists.txt, the project name is also accessible
-# with ${CMAKE_PROJECT_NAME} (both CMake variables are in-sync within the top level
-# build script scope).
+# with ${CMAKE_PROJECT_NAME} (both CMake variables are in-sync within the top07072012
+
 project("Native")
 
 # Creates and names a library, sets it as either STATIC
