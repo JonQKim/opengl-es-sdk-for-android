@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2017, ARM Limited and Contributors
+/* Copyright (c) 2014-2017, ARM Limited and Contributors
  *
  * SPDX-License-Identifier: MIT
  *
@@ -30,7 +30,6 @@
 #include <cmath>
 
 #include "Matrix.h"
-#include "Texture.h"
 /* [Includes] */
 
 #define LOG_TAG "libNative"
@@ -40,39 +39,36 @@
 /* [vertexShader] */
 static const char  glVertexShader[] =
         "attribute vec4 vertexPosition;\n"
-        "attribute vec2 vertexTextureCord;\n"
-        "varying vec2 textureCord;\n"
+        "attribute vec3 vertexColour;\n"
+        "varying vec3 fragColour;\n"
         "uniform mat4 projection;\n"
         "uniform mat4 modelView;\n"
         "void main()\n"
         "{\n"
         "    gl_Position = projection * modelView * vertexPosition;\n"
-        "    textureCord = vertexTextureCord;\n"
+        "    fragColour = vertexColour;\n"
         "}\n";
 /* [vertexShader] */
 
 /* [fragmentShader] */
 static const char  glFragmentShader[] =
         "precision mediump float;\n"
-        "uniform sampler2D texture;\n"
-        "varying vec2 textureCord;\n"
+        "varying vec3 fragColour;\n"
         "void main()\n"
         "{\n"
-        "    gl_FragColor = texture2D(texture, textureCord);\n"
+        "    gl_FragColor = vec4(fragColour, 1.0);\n"
         "}\n";
 /* [fragmentShader] */
 /* [Function definitions] */
-GLuint loadShader(GLenum shaderType, const char* shaderSource)
+static GLuint loadShader(GLenum shaderType, const char* shaderSource)
 {
     GLuint shader = glCreateShader(shaderType);
     if (shader != 0)
     {
         glShaderSource(shader, 1, &shaderSource, NULL);
         glCompileShader(shader);
-
         GLint compiled = 0;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-
         if (compiled != GL_TRUE)
         {
             GLint infoLen = 0;
@@ -99,7 +95,7 @@ GLuint loadShader(GLenum shaderType, const char* shaderSource)
     return shader;
 }
 
-GLuint createProgram(const char* vertexSource, const char * fragmentSource)
+static GLuint createProgram(const char* vertexSource, const char * fragmentSource)
 {
     GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexSource);
     if (vertexShader == 0)
@@ -121,14 +117,11 @@ GLuint createProgram(const char* vertexSource, const char * fragmentSource)
         glAttachShader(program, fragmentShader);
         glLinkProgram(program);
         GLint linkStatus = GL_FALSE;
-        glGetProgramiv(program , GL_LINK_STATUS, &linkStatus);
-
+        glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
         if(linkStatus != GL_TRUE)
         {
             GLint bufLength = 0;
-
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &bufLength);
-
             if (bufLength > 0)
             {
                 char* logBuffer = (char*) malloc(bufLength);
@@ -148,20 +141,90 @@ GLuint createProgram(const char* vertexSource, const char * fragmentSource)
     return program;
 }
 
-GLuint glProgram;
-GLuint vertexLocation;
-GLuint samplerLocation;
-GLuint projectionLocation;
-GLuint modelViewLocation;
-GLuint textureCordLocation;
-GLuint textureId;
+static GLuint glProgram;
+static GLuint vertexLocation;
+static GLuint vertexColourLocation;
+static GLuint projectionLocation;
+static GLuint modelViewLocation;
+/* [vboIDDefinition] */
+static GLuint vboBufferIds[2];
+/* [vboIDDefinition] */
 
-float projectionMatrix[16];
-float modelViewMatrix[16];
-float angle = 0;
+static float projectionMatrix[16];
+static float modelViewMatrix[16];
+static float angle = 0;
+
+/* [vboVertexData] */
+static GLfloat cubeVertices[] = { -1.0f,  1.0f, -1.0f,  /* Back Face First Vertex Position */
+                            1.0f, 0.0f, 0.0f,           /* Back Face First Vertex Colour */
+                            1.0f,  1.0f, -1.0f,         /* Back Face Second Vertex Position */
+                            1.0f, 0.0f, 0.0f,           /* Back Face Second Vertex Colour */
+                            -1.0f, -1.0f, -1.0f,        /* Back Face Third Vertex Position */
+                            1.0f, 0.0f, 0.0f,           /* Back Face Third Vertex Colour */
+                            1.0f, -1.0f, -1.0f,         /* Back Face Fourth Vertex Position */
+                            1.0f, 0.0f, 0.0f,           /* Back Face Fourth Vertex Colour */
+                            -1.0f,  1.0f,  1.0f,        /* Front. */
+                            0.0f, 1.0f, 0.0f,
+                            1.0f,  1.0f,  1.0f,
+                            0.0f, 1.0f, 0.0f,
+                            -1.0f, -1.0f,  1.0f,
+                            0.0f, 1.0f, 0.0f,
+                            1.0f, -1.0f,  1.0f,
+                            0.0f, 1.0f, 0.0f,
+                            -1.0f,  1.0f, -1.0f,        /* Left. */
+                            0.0f, 0.0f, 1.0f,
+                            -1.0f, -1.0f, -1.0f,
+                            0.0f, 0.0f, 1.0f,
+                            -1.0f, -1.0f,  1.0f,
+                            0.0f, 0.0f, 1.0f,
+                            -1.0f,  1.0f,  1.0f,
+                            0.0f, 0.0f, 1.0f,
+                            1.0f,  1.0f, -1.0f,         /* Right. */
+                            1.0f, 1.0f, 0.0f,
+                            1.0f, -1.0f, -1.0f,
+                            1.0f, 1.0f, 0.0f,
+                            1.0f, -1.0f,  1.0f,
+                            1.0f, 1.0f, 0.0f,
+                            1.0f,  1.0f,  1.0f,
+                            1.0f, 1.0f, 0.0f,
+                            -1.0f, -1.0f, -1.0f,         /* Top. */
+                            0.0f, 1.0f, 1.0f,
+                            -1.0f, -1.0f,  1.0f,
+                            0.0f, 1.0f, 1.0f,
+                            1.0f, -1.0f,  1.0f,
+                            0.0f, 1.0f, 1.0f,
+                            1.0f, -1.0f, -1.0f,
+                            0.0f, 1.0f, 1.0f,
+                            -1.0f,  1.0f, -1.0f,         /* Bottom. */
+                            1.0f, 0.0f, 1.0f,
+                            -1.0f,  1.0f,  1.0f,
+                            1.0f, 0.0f, 1.0f,
+                            1.0f,  1.0f,  1.0f,
+                            1.0f, 0.0f, 1.0f,
+                            1.0f,  1.0f, -1.0f,
+                            1.0f, 0.0f, 1.0f,
+};
+/* [vboVertexData] */
+
+/* [vboStrideSize] */
+static GLushort strideLength = 6 * sizeof(GLfloat);
+/* [vboStrideSize] */
+
+/* [vboColourOffset] */
+static GLushort vertexColourOffset = 3  * sizeof (GLfloat);
+/* [vboColourOffset] */
+
+/* [vboBufferSize] */
+static GLushort vertexBufferSize = 48 * 3 * sizeof (GLfloat);
+/* [vboBufferSize] */
+/* [vboElementSize] */
+static GLushort elementBufferSize = 36 * sizeof(GLushort);
+/* [vboElementSize] */
+
+static GLushort indices[] = {0, 2, 3, 0, 1, 3, 4, 6, 7, 4, 5, 7, 8, 9, 10, 11, 8, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
 
 /* [setupGraphicsUpdate] */
-bool setupGraphics(int width, int height)
+static bool setupGraphics(int width, int height)
 {
     glProgram = createProgram(glVertexShader, glFragmentShader);
 
@@ -171,11 +234,21 @@ bool setupGraphics(int width, int height)
         return false;
     }
 
+    /* [vboCreation] */
+    glGenBuffers(2, vboBufferIds);
+    glBindBuffer(GL_ARRAY_BUFFER, vboBufferIds[0]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboBufferIds[1]);
+    /* [vboCreation] */
+
+    /* [vboAllocateSpace] */
+    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, cubeVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementBufferSize, indices, GL_STATIC_DRAW);
+    /* [vboAllocateSpace] */
+
     vertexLocation = glGetAttribLocation(glProgram, "vertexPosition");
-    textureCordLocation = glGetAttribLocation(glProgram, "vertexTextureCord");
+    vertexColourLocation = glGetAttribLocation(glProgram, "vertexColour");
     projectionLocation = glGetUniformLocation(glProgram, "projection");
     modelViewLocation = glGetUniformLocation(glProgram, "modelView");
-    samplerLocation = glGetUniformLocation(glProgram, "texture");
 
     /* Setup the perspective. */
     matrixPerspective(projectionMatrix, 45, (float)width / (float)height, 0.1f, 100);
@@ -183,76 +256,12 @@ bool setupGraphics(int width, int height)
 
     glViewport(0, 0, width, height);
 
-    /* Load the Texture. */
-    textureId = loadSimpleTexture();
-    if(textureId == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    return true;
 }
 /* [setupGraphicsUpdate] */
-/* [verticesAndTexture] */
-GLfloat cubeVertices[] = {-1.0f,  1.0f, -1.0f, /* Back. */
-                           1.0f,  1.0f, -1.0f,
-                          -1.0f, -1.0f, -1.0f,
-                           1.0f, -1.0f, -1.0f,
-                          -1.0f,  1.0f,  1.0f, /* Front. */
-                           1.0f,  1.0f,  1.0f,
-                          -1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f,  1.0f,
-                          -1.0f,  1.0f, -1.0f, /* Left. */
-                          -1.0f, -1.0f, -1.0f,
-                          -1.0f, -1.0f,  1.0f,
-                          -1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f, -1.0f, /* Right. */
-                           1.0f, -1.0f, -1.0f,
-                           1.0f, -1.0f,  1.0f,
-                           1.0f,  1.0f,  1.0f,
-                          -1.0f, -1.0f, -1.0f, /* Top. */
-                          -1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f, -1.0f,
-                          -1.0f,  1.0f, -1.0f, /* Bottom. */
-                          -1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f, -1.0f
-                         };
-
-GLfloat textureCords[] = { 1.0f, 1.0f, /* Back. */
-                           0.0f, 1.0f,
-                           1.0f, 0.0f,
-                           0.0f, 0.0f,
-                           0.0f, 1.0f, /* Front. */
-                           1.0f, 1.0f,
-                           0.0f, 0.0f,
-                           1.0f, 0.0f,
-                           0.0f, 1.0f, /* Left. */
-                           0.0f, 0.0f,
-                           1.0f, 0.0f,
-                           1.0f, 1.0f,
-                           1.0f, 1.0f, /* Right. */
-                           1.0f, 0.0f,
-                           0.0f, 0.0f,
-                           0.0f, 1.0f,
-                           0.0f, 1.0f, /* Top. */
-                           0.0f, 0.0f,
-                           1.0f, 0.0f,
-                           1.0f, 1.0f,
-                           0.0f, 0.0f, /* Bottom. */
-                           0.0f, 1.0f,
-                           1.0f, 1.0f,
-                           1.0f, 0.0f
-};
-/* [verticesAndTexture] */
-
-GLushort indicies[] = {0, 3, 2, 0, 1, 3, 4, 6, 7, 4, 7, 5,  8, 9, 10, 8, 11, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
 
 /* [renderFrame] */
-void renderFrame()
+static void renderFrame()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -265,19 +274,20 @@ void renderFrame()
     matrixTranslate(modelViewMatrix, 0.0f, 0.0f, -10.0f);
 
     glUseProgram(glProgram);
-    glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
-    glEnableVertexAttribArray(vertexLocation);
 
-    /* [enableAttributes] */
-    glVertexAttribPointer(textureCordLocation, 2, GL_FLOAT, GL_FALSE, 0, textureCords);
-    glEnableVertexAttribArray(textureCordLocation);
-    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE,projectionMatrix);
+    /* [vboVertexAttribPointer] */
+    glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, strideLength, 0);
+    glEnableVertexAttribArray(vertexLocation);
+    glVertexAttribPointer(vertexColourLocation, 3, GL_FLOAT, GL_FALSE, strideLength, (const void *) vertexColourOffset);
+    glEnableVertexAttribArray(vertexColourLocation);
+    /* [vboVertexAttribPointer] */
+
+    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projectionMatrix);
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelViewMatrix);
 
-    /* Set the sampler texture unit to 0. */
-    glUniform1i(samplerLocation, 0);
-    /* [enableAttributes] */
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, indicies);
+    /* [vboDrawElements] */
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
+    /* [vboDrawElements] */
 
     angle += 1;
     if (angle > 360)
