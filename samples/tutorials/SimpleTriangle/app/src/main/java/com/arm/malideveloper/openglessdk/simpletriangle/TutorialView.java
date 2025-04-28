@@ -1,3 +1,23 @@
+/* Copyright (c) 2013-2017, ARM Limited and Contributors
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.arm.malideveloper.openglessdk.simpletriangle;
 
 import android.content.Context;
@@ -11,7 +31,7 @@ import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.opengles.GL10;
 
-public class TutorialView extends GLSurfaceView{
+class TutorialView extends GLSurfaceView {
     protected int redSize = 8;
     protected int greenSize = 8;
     protected int blueSize = 8;
@@ -19,20 +39,26 @@ public class TutorialView extends GLSurfaceView{
     protected int depthSize = 16;
     protected int sampleSize = 4;
     protected int stencilSize = 0;
-    protected int[] value = new int [1];
+    protected int[] value = new int[1];
 
     public TutorialView(Context context) {
         super(context);
+
         setEGLContextFactory(new ContextFactory());
+
         setEGLConfigChooser(new ConfigChooser());
+
         setRenderer(new Renderer());
     }
 
     private static class ContextFactory implements GLSurfaceView.EGLContextFactory {
         public EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig eglConfig) {
             final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
-            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+
+            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
+
             EGLContext context = egl.eglCreateContext(display, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
+
             return context;
         }
 
@@ -69,7 +95,7 @@ public class TutorialView extends GLSurfaceView{
             for (EGLConfig config : configs) {
                 int d = getConfigAttrib(egl, display, config, EGL10.EGL_DEPTH_SIZE, 0);
                 int s = getConfigAttrib(egl, display, config, EGL10.EGL_GREEN_SIZE, 0);
-                int r = getConfigAttrib(egl, display, config, EGL10.EGL_RED_SIZE,0);
+                int r = getConfigAttrib(egl, display, config, EGL10.EGL_RED_SIZE, 0);
                 int g = getConfigAttrib(egl, display, config, EGL10.EGL_GREEN_SIZE, 0);
                 int b = getConfigAttrib(egl, display, config, EGL10.EGL_BLUE_SIZE, 0);
                 int a = getConfigAttrib(egl, display, config, EGL10.EGL_ALPHA_SIZE, 0);
@@ -95,9 +121,12 @@ public class TutorialView extends GLSurfaceView{
         public void onDrawFrame(GL10 gl) {
             NativeLibrary.step();
         }
+
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             NativeLibrary.init(width, height);
         }
-        public void onSurfaceCreated(GL10 gl, EGLConfig config) {}
+
+        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        }
     }
 }
