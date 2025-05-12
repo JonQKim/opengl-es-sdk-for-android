@@ -18,9 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TEXTURECUBE_MATRIX_H
-#define TEXTURECUBE_MATRIX_H
-#include <math.h>
+#ifndef MATRIX_H
+#define MATRIX_H
 
 /**
  * \brief Takes a 4 * 4 and sets the elements to the Identity function.
@@ -104,4 +103,4 @@ void matrixScale(float* matrix,float x, float y, float z);
  */
 float matrixDegreesToRadians(float degrees);
 
-#endif //TEXTURECUBE_MATRIX_H
+#endif

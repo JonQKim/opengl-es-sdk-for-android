@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* [Includes] */
 #include <jni.h>
 #include <android/log.h>
 
@@ -31,14 +30,13 @@
 
 #include "Matrix.h"
 #include "Texture.h"
-/* [Includes] */
 
 #define LOG_TAG "libNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-/* [vertexShader] */
-static const char  glVertexShader[] =
+/* [shaders] */
+static const char glVertexShader[] =
         "attribute vec4 vertexPosition;\n"
         "attribute vec2 vertexTextureCord;\n"
         "varying vec2 textureCord;\n"
@@ -49,10 +47,8 @@ static const char  glVertexShader[] =
         "    gl_Position = projection * modelView * vertexPosition;\n"
         "    textureCord = vertexTextureCord;\n"
         "}\n";
-/* [vertexShader] */
 
-/* [fragmentShader] */
-static const char  glFragmentShader[] =
+static const char glFragmentShader[] =
         "precision mediump float;\n"
         "uniform sampler2D texture;\n"
         "varying vec2 textureCord;\n"
@@ -60,8 +56,8 @@ static const char  glFragmentShader[] =
         "{\n"
         "    gl_FragColor = texture2D(texture, textureCord);\n"
         "}\n";
-/* [fragmentShader] */
-/* [Function definitions] */
+/* [shaders] */
+
 GLuint loadShader(GLenum shaderType, const char* shaderSource)
 {
     GLuint shader = glCreateShader(shaderType);
@@ -117,7 +113,7 @@ GLuint createProgram(const char* vertexSource, const char * fragmentSource)
 
     if (program != 0)
     {
-        glAttachShader(program, vertexShader);
+        glAttachShader(program , vertexShader);
         glAttachShader(program, fragmentShader);
         glLinkProgram(program);
         GLint linkStatus = GL_FALSE;
@@ -212,14 +208,14 @@ GLfloat cubeVertices[] = {-1.0f,  1.0f, -1.0f, /* Back. */
                            1.0f, -1.0f, -1.0f,
                            1.0f, -1.0f,  1.0f,
                            1.0f,  1.0f,  1.0f,
-                          -1.0f, -1.0f, -1.0f, /* Top. */
-                          -1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f, -1.0f,
-                          -1.0f,  1.0f, -1.0f, /* Bottom. */
-                          -1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f, -1.0f
+                          -1.0f, 1.0f, -1.0f, /* Top. */
+                          -1.0f, 1.0f,  1.0f,
+                           1.0f, 1.0f,  1.0f,
+                           1.0f, 1.0f, -1.0f,
+                          -1.0f, - 1.0f, -1.0f, /* Bottom. */
+                          -1.0f,  -1.0f,  1.0f,
+                           1.0f, - 1.0f,  1.0f,
+                           1.0f,  -1.0f, -1.0f
                          };
 
 GLfloat textureCords[] = { 1.0f, 1.0f, /* Back. */
@@ -251,11 +247,10 @@ GLfloat textureCords[] = { 1.0f, 1.0f, /* Back. */
 
 GLushort indicies[] = {0, 3, 2, 0, 1, 3, 4, 6, 7, 4, 7, 5,  8, 9, 10, 8, 11, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
 
-/* [renderFrame] */
 void renderFrame()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glClear (GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     matrixIdentityFunction(modelViewMatrix);
 
@@ -285,7 +280,7 @@ void renderFrame()
         angle -= 360;
     }
 }
-/* [renderFrame] */
+
 extern "C"
 {
 	JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_texturecube_NativeLibrary_init(

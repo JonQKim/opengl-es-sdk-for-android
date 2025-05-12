@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TEXTURECUBE_TEXTURE_H
-#define TEXTURECUBE_TEXTURE_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
 #include <GLES2/gl2.h>
 
@@ -28,4 +28,4 @@
  * \return Returns the handle to the texture object.
  */
 GLuint loadSimpleTexture();
-#endif //TEXTURECUBE_TEXTURE_H
+#endif
