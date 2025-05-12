@@ -18,19 +18,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* [Includes] */
 #include <jni.h>
 #include <android/log.h>
 
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
 
 #include "Matrix.h"
-/* [Includes] */
 
 #define LOG_TAG "libNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -59,7 +57,7 @@ static const char  glFragmentShader[] =
         "    gl_FragColor = vec4(fragColour, 1.0);\n"
         "}\n";
 /* [fragmentShader] */
-/* [Function definitions] */
+
 GLuint loadShader(GLenum shaderType, const char* shaderSource)
 {
     GLuint shader = glCreateShader(shaderType);
@@ -69,7 +67,7 @@ GLuint loadShader(GLenum shaderType, const char* shaderSource)
         glCompileShader(shader);
         GLint compiled = 0;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-        if (!compiled)
+        if (compiled != GL_TRUE)
         {
             GLint infoLen = 0;
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
