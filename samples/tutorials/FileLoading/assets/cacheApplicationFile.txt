@@ -1,2 +1,0 @@
-This is a file that can be found in the cache. This means it isn't guaranteed to be there as the system can remove it when it runs low on memory.
-

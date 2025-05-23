@@ -1,1 +1,0 @@
-This is the file that is stored in a public place. This means that other applications besides this one can access it.
