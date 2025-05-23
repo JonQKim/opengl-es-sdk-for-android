@@ -21,6 +21,7 @@
 /* [Includes] */
 #include <jni.h>
 #include <android/log.h>
+#include <unistd.h>
 
 #define LOG_TAG "libNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -31,7 +32,9 @@ extern "C"
 {
 	JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_firstnative_NativeLibrary_init(
 			JNIEnv * env, jclass clazz) {
-        LOGI("Hello From the Native Side!!");
-    }
-}
+		LOGI("Hello From the Native Side!!");
+	}
+};
+/* [Function definitions] */
+
 /* [Function definitions] */
