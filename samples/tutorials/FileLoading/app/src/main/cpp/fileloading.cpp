@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2017, ARM Limited and Contributors
+/* Copyright (c) 2014-2017, ARM Limited and Contributors
  *
  * SPDX-License-Identifier: MIT
  *
@@ -18,23 +18,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* [Includes] */
 #include <jni.h>
 #include <android/log.h>
-#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define LOG_TAG "libNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-/* [Includes] */
-/* [Function definitions] */
+
+static int PRIVATE_FILE_SIZE = 82;
+static int PUBLIC_FILE_SIZE = 105;
+static int CACHE_FILE_SIZE = 146;
+
+/* [readFile] */
+void readFile(const char * fileName, int size)
+{
+    FILE * file = fopen(fileName, "r");
+    char * fileContent =(char *) malloc(sizeof(char) * size);
+
+    if(file == NULL)
+    {
+        LOGE("Failure to load the file");
+        return;
+    }
+    fread(fileContent, size, 1, file);
+    LOGI("%s",fileContent);
+    free(fileContent);
+    fclose(file);
+}
+/* [readFile] */
+
 extern "C"
 {
-	JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_firstnative_NativeLibrary_init(
-			JNIEnv * env, jclass clazz) {
-		LOGI("Hello From the Native Side!!");
-	}
-};
-/* [Function definitions] */
+	/*[nativeInitFunction]*/
+	JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_fileloading_NativeLibrary_init(
+			JNIEnv * env, jclass clazz, jstring privateFile, jstring publicFile, jstring cacheFile) {
+	    const char* privateFileC = env->GetStringUTFChars(privateFile, NULL);
+	    const char* publicFileC = env->GetStringUTFChars(publicFile, NULL);
+	    const char* cacheFileC = env->GetStringUTFChars(cacheFile, NULL);
 
-/* [Function definitions] */
+	    readFile(privateFileC, PRIVATE_FILE_SIZE);
+	    readFile(publicFileC, PUBLIC_FILE_SIZE);
+	    readFile(cacheFileC, CACHE_FILE_SIZE);
+
+	    env->ReleaseStringUTFChars(privateFile, privateFileC);
+	    env->ReleaseStringUTFChars(publicFile, publicFileC);
+	    env->ReleaseStringUTFChars(cacheFile, cacheFileC);
+	}
+	/*[nativeInitFunction]*/
+};

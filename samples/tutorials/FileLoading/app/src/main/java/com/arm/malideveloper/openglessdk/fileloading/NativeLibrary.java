@@ -18,13 +18,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* [NativeLibrary] */
 package com.arm.malideveloper.openglessdk.fileloading;
 
 public class NativeLibrary {
     static {
         System.loadLibrary("Native");
     }
-    public static native void init();
+    /* [initFunctionPrototype] */
+    public static native void init(String privateFile, String publicFile, String cacheFile);
+    /* [initFunctionPrototype] */
 }
-/* [NativeLibrary] */
